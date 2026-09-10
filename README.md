@@ -2,6 +2,31 @@
 
 ![Architecture](./exporter.png)
 
+# Infrastructure Overview
+
+## Node Roles
+
+| Node | IP Address | vCPU | RAM (MB) | Role(s) |
+|---|---|---:|---:|---|
+| `ansible` | `10.10.10.5` | 1 | 1024 | Ansible controller |
+| `db1` | `10.10.10.11` | 1 | 2048 | PostgreSQL, Patroni, etcd, postgres_exporter, Monitoring (Prometheus/Grafana) |
+| `db2` | `10.10.10.12` | 1 | 2048 | PostgreSQL, Patroni, etcd, postgres_exporter |
+| `db3` | `10.10.10.13` | 1 | 2048 | PostgreSQL, Patroni, etcd, postgres_exporter |
+| `lb1` | `10.10.10.21` | 1 | 500 | Load balancer, Keepalived (VIP master/backup) |
+| `lb2` | `10.10.10.22` | 1 | 500 | Load balancer, Keepalived (VIP master/backup) |
+| `backup1` | `10.10.10.31` | 1 | 500 | Backup server (`pgbackrest` + WAL archiving) |
+| **VIP** | **`10.10.10.100`** | — | — | Virtual IP for PostgreSQL access; managed by Keepalived on `lb1`/`lb2` |
+
+## Inventory Group Mapping
+
+| Group | Hosts | Purpose |
+|---|---|---|
+| `postgres` | `db1`, `db2`, `db3` | PostgreSQL / Patroni cluster |
+| `etcd` | `db1`, `db2`, `db3` | etcd cluster for Patroni DCS |
+| `loadbalancers` | `lb1`, `lb2` | Database traffic load balancing |
+| `monitoring` | `db1` | Prometheus + Grafana monitoring stack |
+| `backup` | `backup1` | Database backup and WAL archiving |
+
 ## How to deploy and use the project
 
 All deployment and configuration tasks are executed from the **Ansible node**.
