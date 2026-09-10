@@ -1,0 +1,96 @@
+---
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - tar
+      - postgresql-client
+    state: present
+    update_cache: true
+
+- name: Download postgres_exporter
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ postgres_exporter_version }}/postgres_exporter-{{ postgres_exporter_version }}.linux-amd64.tar.gz"
+    dest: "/tmp/postgres_exporter-{{ postgres_exporter_version }}.tar.gz"
+    mode: "0644"
+
+- name: Extract postgres_exporter
+  ansible.builtin.unarchive:
+    src: "/tmp/postgres_exporter-{{ postgres_exporter_version }}.tar.gz"
+    dest: /tmp
+    remote_src: true
+    creates: "/tmp/postgres_exporter-{{ postgres_exporter_version }}.linux-amd64/postgres_exporter"
+
+- name: Install postgres_exporter binary
+  ansible.builtin.copy:
+    src: "/tmp/postgres_exporter-{{ postgres_exporter_version }}.linux-amd64/postgres_exporter"
+    dest: "{{ postgres_exporter_install_dir }}/postgres_exporter"
+    owner: root
+    group: root
+    mode: "0755"
+    remote_src: true
+  notify:
+    - Restart postgres_exporter
+
+- name: Create postgres_exporter configuration directory
+  ansible.builtin.file:
+    path: /etc/postgres_exporter
+    state: directory
+    owner: postgres
+    group: postgres
+    mode: "0750"
+
+- name: Create postgres_exporter password file
+  ansible.builtin.copy:
+    content: "{{ postgres_exporter_password }}"
+    dest: "{{ postgres_exporter_password_file }}"
+    owner: postgres
+    group: postgres
+    mode: "0600"
+  notify:
+    - Restart postgres_exporter
+
+- name: Check PostgreSQL recovery state
+  ansible.builtin.command:
+    cmd: runuser -u postgres -- psql -tAc "SELECT pg_is_in_recovery()"
+  register: postgres_recovery_state
+  changed_when: false
+
+- name: Create postgres_exporter role on primary
+  ansible.builtin.command:
+    cmd: >
+      runuser -u postgres -- psql -v ON_ERROR_STOP=1 -c
+      "CREATE ROLE {{ postgres_exporter_user }}
+      LOGIN PASSWORD '{{ postgres_exporter_password }}'"
+  when: postgres_recovery_state.stdout | trim == 'f'
+  register: exporter_role_create
+  changed_when: true
+  failed_when:
+    - exporter_role_create.rc != 0
+    - "'already exists' not in exporter_role_create.stderr"
+
+- name: Grant pg_monitor role to postgres_exporter
+  ansible.builtin.command:
+    cmd: >
+      runuser -u postgres -- psql -v ON_ERROR_STOP=1 -c
+      "GRANT pg_monitor TO {{ postgres_exporter_user }}"
+  when: postgres_recovery_state.stdout | trim == 'f'
+  changed_when: false
+
+- name: Install postgres_exporter systemd unit
+  ansible.builtin.template:
+    src: postgres_exporter.service.j2
+    dest: /etc/systemd/system/postgres_exporter.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart postgres_exporter
+
+- name: Enable and start postgres_exporter
+  ansible.builtin.systemd:
+    name: postgres_exporter
+    enabled: true
+    state: started
+    daemon_reload: true

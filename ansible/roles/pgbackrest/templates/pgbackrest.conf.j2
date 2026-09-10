@@ -1,0 +1,17 @@
+[global]
+repo1-host={{ backup_host }}
+repo1-host-user={{ pgbackrest_repo_user }}
+repo1-path={{ pgbackrest_repo_path }}
+
+repo1-retention-full={{ pgbackrest_repo_retention_full }}
+
+compress-type={{ pgbackrest_compress_type }}
+
+archive-async=y
+spool-path={{ pgbackrest_spool_path }}
+
+log-level-console=info
+log-level-file=detail
+
+[{{ pgbackrest_stanza }}]
+pg1-path={{ pgbackrest_pg1_path }}

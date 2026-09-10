@@ -1,0 +1,8 @@
+---
+- name: Configure load balancers
+  hosts: loadbalancers
+  become: true
+
+  roles:
+    - haproxy
+    - keepalived

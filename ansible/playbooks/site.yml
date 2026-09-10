@@ -1,0 +1,58 @@
+---
+- name: Configure common settings
+  hosts: all
+  become: true
+
+  roles:
+    - common
+
+- name: Deploy etcd
+  hosts: etcd
+  become: true
+
+  roles:
+    - etcd
+
+- name: Configure pgBackRest
+  hosts: all
+  become: true
+
+  roles:
+    - pgbackrest
+
+- name: Deploy PostgreSQL HA
+  hosts: postgres
+  become: true
+
+  roles:
+    - postgresql
+    - patroni
+
+- name: Configure load balancers
+  hosts: loadbalancers
+  become: true
+
+  roles:
+    - haproxy
+    - keepalived
+
+- name: Install Docker on db1
+  hosts: db1
+  become: true
+
+  roles:
+    - docker
+
+- name: Deploy PostgreSQL monitoring
+  hosts: db1
+  become: true
+
+  roles:
+    - monitoring
+
+- name: Deploy PostgreSQL exporter
+  hosts: postgres
+  become: true
+
+  roles:
+    - postgres_exporter

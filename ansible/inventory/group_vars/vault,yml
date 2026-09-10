@@ -1,0 +1,3 @@
+---
+vault_postgres_password: "ChangeMe_Postgres_123!"
+vault_replication_password: "ChangeMe_Replication_123!"

@@ -1,0 +1,42 @@
+---
+patroni_config_file: /etc/patroni.yml
+patroni_api_port: 8008
+patroni_api_address: "{{ ansible_host }}:{{ patroni_api_port }}"
+
+patroni_scope: postgres-ha
+patroni_namespace: /service/
+
+postgres_superuser: postgres
+postgres_superuser_password: postgres123
+
+postgres_replication_user: replicator
+postgres_replication_password: replicator123
+
+patroni_ttl: 30
+patroni_loop_wait: 10
+patroni_retry_timeout: 10
+
+patroni_maximum_lag_on_failover: 1048576
+
+postgresql_version: 17
+postgresql_data_dir: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_config_dir: "/etc/postgresql/{{ postgresql_version }}/main"
+postgresql_port: 5432
+
+# PostgreSQL Tuning - Scaled for 1GB RAM / 1 vCPU Vagrant Environment
+pg_max_connections: 100               # کاهش از 200 به 100 برای جلوگیری از مصرف زیاد work_mem
+pg_shared_buffers: "256MB"            # دقیقاً ۲۵٪ از ۱ گیگابایت رم
+pg_effective_cache_size: "768MB"      # ۷۵٪ از کل رم (برای تخمین سیستم‌عامل در کش کردن فایل‌ها)
+pg_maintenance_work_mem: "64MB"       # محدود شده برای جلوگیری از اشغال رم حین Vacuum
+pg_checkpoint_completion_target: 0.9  # پخش کردن بار I/O روی دیسک (استاندارد پروداکشن)
+pg_wal_buffers: "8MB"                 # متناسب با shared_buffers کوچک
+pg_default_statistics_target: 100     # استاندارد پروداکشن
+pg_random_page_cost: 1.1              # با فرض اجرای Vagrant روی لپ‌تاپ دارای هارد SSD
+pg_effective_io_concurrency: 200      # بهینه برای SSD
+pg_work_mem: "4MB"                    # فرمول: (1024 - 256) / (100 * 3) = ~2.5MB (رند شده به 4MB)
+pg_min_wal_size: "512MB"
+pg_max_wal_size: "2GB"                # جلوگیری از پر شدن سریع دیسک مجازی
+# تنظیمات مربوط به محدودیت ۱ هسته CPU
+pg_max_worker_processes: 2
+pg_max_parallel_workers_per_gather: 1
+pg_max_parallel_workers: 2

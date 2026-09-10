@@ -1,0 +1,31 @@
+---
+- name: Install Keepalived
+  ansible.builtin.apt:
+    name:
+      - keepalived
+    state: present
+    update_cache: true
+
+- name: Install HAProxy health check
+  ansible.builtin.template:
+    src: check_haproxy.sh.j2
+    dest: /usr/local/bin/check_haproxy.sh
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Render Keepalived configuration
+  ansible.builtin.template:
+    src: keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart Keepalived
+
+- name: Enable and start Keepalived
+  ansible.builtin.systemd:
+    name: keepalived
+    enabled: true
+    state: started

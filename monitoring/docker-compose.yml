@@ -1,0 +1,47 @@
+services:
+
+  prometheus:
+    image: prom/prometheus:v3.14.0
+    container_name: prometheus
+    restart: unless-stopped
+
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=7d"
+
+    ports:
+      - "9090:9090"
+
+    networks:
+      - monitoring-net
+
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:13.2.0
+    container_name: grafana
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    networks:
+      - monitoring-net
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  monitoring-net:

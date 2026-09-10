@@ -1,0 +1,10 @@
+127.0.0.1 localhost
+127.0.1.1 {{ inventory_hostname }}
+
+{% for host, ip in cluster_nodes.items() %}
+{{ ip }} {{ host }}.{{ cluster_domain }} {{ host }}
+{% endfor %}
+
+{% for host, ip in loadbalancer_nodes.items() %}
+{{ ip }} {{ host }}.{{ cluster_domain }} {{ host }}
+{% endfor %}

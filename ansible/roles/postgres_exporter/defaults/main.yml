@@ -1,0 +1,12 @@
+---
+postgres_exporter_version: "0.18.1"
+
+postgres_exporter_port: 9187
+
+postgres_exporter_user: postgres_exporter
+
+postgres_exporter_install_dir: /usr/local/bin
+
+postgres_exporter_password_file: /etc/postgres_exporter/password
+
+postgres_exporter_password: exporter123

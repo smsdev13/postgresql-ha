@@ -1,0 +1,13 @@
+---
+- name: Deploy PostgreSQL exporters
+  hosts: postgres
+  become: true
+  roles:
+    - postgres_exporter
+
+- name: Deploy monitoring stack
+  hosts: monitoring
+  become: true
+  roles:
+    - docker
+    - monitoring

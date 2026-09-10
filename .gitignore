@@ -1,0 +1,8 @@
+postgres-ha-ansible/
+postgres-ha-backup1/
+postgres-ha-db1/
+postgres-ha-db2/
+postgres-ha-db3/
+postgres-ha-lb1/
+postgres-ha-lb2/
+.vagrant/

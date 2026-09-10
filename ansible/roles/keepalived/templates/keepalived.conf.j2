@@ -1,0 +1,46 @@
+global_defs {
+    router_id {{ inventory_hostname }}
+    enable_script_security
+    script_user root
+}
+
+vrrp_script chk_haproxy {
+    script "/usr/local/bin/check_haproxy.sh"
+    interval 2
+    timeout 2
+    fall 3
+    rise 2
+}
+
+vrrp_instance VI_POSTGRES {
+    state {{ 'MASTER' if inventory_hostname == 'lb1' else 'BACKUP' }}
+
+    interface {{ keepalived_interface }}
+
+    virtual_router_id {{ keepalived_router_id }}
+
+    priority {{ keepalived_priority[inventory_hostname] }}
+
+    advert_int 1
+
+    authentication {
+        auth_type PASS
+        auth_pass {{ keepalived_auth_pass }}
+    }
+
+    unicast_src_ip {{ ansible_host }}
+
+    unicast_peer {
+{% for host, ip in loadbalancer_nodes.items() if host != inventory_hostname %}
+        {{ ip }}
+{% endfor %}
+    }
+
+    virtual_ipaddress {
+        {{ keepalived_vip }}/{{ keepalived_vip_cidr }}
+    }
+
+    track_script {
+        chk_haproxy
+    }
+}

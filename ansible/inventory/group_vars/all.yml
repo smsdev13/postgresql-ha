@@ -1,0 +1,35 @@
+---
+cluster_domain: "pg-ha.local"
+
+cluster_nodes:
+  db1: 10.10.10.11
+  db2: 10.10.10.12
+  db3: 10.10.10.13
+
+loadbalancer_nodes:
+  lb1: 10.10.10.21
+  lb2: 10.10.10.22
+
+postgres_vip: 10.10.10.100
+
+etcd_version: "3.6.14"
+etcd_data_dir: "/var/lib/etcd"
+etcd_client_port: 2379
+etcd_peer_port: 2380
+
+timezone: "UTC"
+
+etcd_cluster_members:
+  db1: "http://10.10.10.11:2380"
+  db2: "http://10.10.10.12:2380"
+  db3: "http://10.10.10.13:2380"
+
+backup_host: "10.10.10.31"
+backup_hostname: "backup1"
+
+pgbackrest_stanza: "postgres-ha"
+pgbackrest_repo_path: "/var/lib/pgbackrest"
+pgbackrest_repo_user: "pgbackrest"
+
+pgbackrest_repo_retention_full: 2
+pgbackrest_compress_type: "zst"

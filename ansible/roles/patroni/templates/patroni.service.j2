@@ -1,0 +1,21 @@
+[Unit]
+Description=Patroni PostgreSQL HA
+After=network-online.target etcd.service
+Wants=network-online.target
+Requires=etcd.service
+
+[Service]
+Type=simple
+
+User=postgres
+Group=postgres
+
+ExecStart=/usr/bin/patroni {{ patroni_config_file }}
+
+Restart=on-failure
+RestartSec=5
+
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

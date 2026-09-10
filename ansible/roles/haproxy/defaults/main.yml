@@ -1,0 +1,6 @@
+---
+haproxy_frontend_port: 5432
+haproxy_stats_port: 8404
+
+patroni_api_port: 8008
+postgres_backend_port: 5432

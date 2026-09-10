@@ -1,0 +1,8 @@
+---
+- name: Deploy PostgreSQL HA nodes
+  hosts: postgres
+  become: true
+
+  roles:
+    - postgresql
+#    - patroni

@@ -1,0 +1,8 @@
+---
+postgresql_version: 17
+postgresql_service_name: postgresql
+
+postgresql_data_dir: "/var/lib/postgresql/{{ postgresql_version }}/main"
+postgresql_config_dir: "/etc/postgresql/{{ postgresql_version }}/main"
+
+postgresql_port: 5432

@@ -1,0 +1,41 @@
+---
+- name: Install Patroni
+  ansible.builtin.apt:
+    name:
+      - patroni
+    state: present
+    update_cache: true
+
+- name: Create Patroni configuration
+  ansible.builtin.template:
+    src: patroni.yml.j2
+    dest: "{{ patroni_config_file }}"
+    owner: postgres
+    group: postgres
+    mode: "0600"
+  notify:
+    - Restart patroni
+
+- name: Install Patroni systemd unit
+  ansible.builtin.template:
+    src: patroni.service.j2
+    dest: /etc/systemd/system/patroni.service
+    owner: root
+    group: root
+    mode: "0644"
+  notify:
+    - Restart patroni
+
+- name: Disable distro PostgreSQL service
+  ansible.builtin.systemd:
+    name: postgresql
+    enabled: false
+    state: stopped
+  failed_when: false
+
+- name: Enable and start Patroni
+  ansible.builtin.systemd:
+    name: patroni
+    enabled: true
+    state: started
+    daemon_reload: true

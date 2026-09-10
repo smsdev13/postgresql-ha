@@ -1,0 +1,13 @@
+---
+keepalived_interface: enp0s8
+
+keepalived_router_id: 51
+
+keepalived_vip: 10.10.10.100
+keepalived_vip_cidr: 24
+
+keepalived_priority:
+  lb1: 100
+  lb2: 90
+
+keepalived_auth_pass: "ChangeThisPassword"

@@ -1,0 +1,568 @@
+{
+  "title": "PostgreSQL HA",
+  "uid": "postgres-ha",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "15s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "instance",
+        "type": "query",
+        "label": "Instance",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(pg_up, instance)",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      },
+      {
+        "name": "database",
+        "type": "query",
+        "label": "Database",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "query": "label_values(pg_database_size_bytes{instance=~\"$instance\"}, datname)",
+        "includeAll": true,
+        "multi": true,
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "PostgreSQL Up",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "pg_up{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "value": "1",
+              "text": "UP"
+            },
+            {
+              "type": "value",
+              "value": "0",
+              "text": "DOWN"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Primary / Replica",
+      "gridPos": {
+        "x": 6,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "pg_is_in_recovery{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "value": "0",
+              "text": "PRIMARY"
+            },
+            {
+              "type": "value",
+              "value": "1",
+              "text": "REPLICA"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Active Connections",
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (pg_stat_database_numbackends{instance=~\"$instance\",datname!~\"template0|template1\"})",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Connection Utilization",
+      "gridPos": {
+        "x": 18,
+        "y": 0,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "100 * sum by (instance) (pg_stat_database_numbackends{instance=~\"$instance\",datname!~\"template0|template1\"}) / on(instance) pg_settings_max_connections{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Transactions / sec",
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_xact_commit{instance=~\"$instance\",datname!~\"template0|template1\"}[5m]))",
+          "legendFormat": "{{instance}} commits"
+        },
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_xact_rollback{instance=~\"$instance\",datname!~\"template0|template1\"}[5m]))",
+          "legendFormat": "{{instance}} rollbacks"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Rows Activity / sec",
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_tup_inserted{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}} inserted"
+        },
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_tup_updated{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}} updated"
+        },
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_tup_deleted{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}} deleted"
+        },
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_tup_returned{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}} returned"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Cache Hit Ratio",
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "100 * sum by (instance) (pg_stat_database_blks_hit{instance=~\"$instance\",datname!~\"template0|template1\"}) / clamp_min(sum by (instance) (pg_stat_database_blks_hit{instance=~\"$instance\",datname!~\"template0|template1\"}) + sum by (instance) (pg_stat_database_blks_read{instance=~\"$instance\",datname!~\"template0|template1\"}), 1)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Database Size",
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "pg_database_size_bytes{instance=~\"$instance\",datname=~\"$database\"}",
+          "legendFormat": "{{instance}} / {{datname}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Replication Lag",
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "pg_stat_replication_pg_wal_lsn_diff{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}} → {{application_name}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "WAL Generation Rate",
+      "gridPos": {
+        "x": 12,
+        "y": 16,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "rate(pg_stat_wal_wal_bytes{instance=~\"$instance\"}[5m])",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Temp Files / sec",
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_temp_files{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Temp Bytes / sec",
+      "gridPos": {
+        "x": 12,
+        "y": 22,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_temp_bytes{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Deadlocks",
+      "gridPos": {
+        "x": 0,
+        "y": 28,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_deadlocks{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Database Conflicts",
+      "gridPos": {
+        "x": 8,
+        "y": 28,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_conflicts{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Block Read / Write Time",
+      "gridPos": {
+        "x": 16,
+        "y": 28,
+        "w": 8,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_blk_read_time{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}} read"
+        },
+        {
+          "expr": "sum by (instance) (rate(pg_stat_database_blk_write_time{instance=~\"$instance\",datname=~\"$database\"}[5m]))",
+          "legendFormat": "{{instance}} write"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "WAL Records / sec",
+      "gridPos": {
+        "x": 0,
+        "y": 33,
+        "w": 12,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "rate(pg_stat_wal_wal_records{instance=~\"$instance\"}[5m])",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "WAL Buffers Full / sec",
+      "gridPos": {
+        "x": 12,
+        "y": 33,
+        "w": 12,
+        "h": 5
+      },
+      "targets": [
+        {
+          "expr": "rate(pg_stat_wal_wal_buffers_full{instance=~\"$instance\"}[5m])",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Replication Write / Flush / Replay Lag",
+      "gridPos": {
+        "x": 0,
+        "y": 38,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "pg_stat_replication_write_lag_seconds{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}} → {{application_name}} write"
+        },
+        {
+          "expr": "pg_stat_replication_flush_lag_seconds{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}} → {{application_name}} flush"
+        },
+        {
+          "expr": "pg_stat_replication_replay_lag_seconds{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}} → {{application_name}} replay"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "type": "table",
+      "title": "Replication State",
+      "gridPos": {
+        "x": 12,
+        "y": 38,
+        "w": 12,
+        "h": 6
+      },
+      "targets": [
+        {
+          "expr": "pg_stat_replication_pg_wal_lsn_diff{instance=~\"$instance\"}",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "transformations": [
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "Value": true,
+              "__name__": true
+            },
+            "renameByName": {
+              "instance": "Leader",
+              "application_name": "Replica",
+              "client_addr": "Replica IP",
+              "state": "State",
+              "slot_name": "Slot"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Exporter Scrape Error",
+      "gridPos": {
+        "x": 0,
+        "y": 44,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "pg_exporter_last_scrape_error{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            {
+              "type": "value",
+              "value": "0",
+              "text": "OK"
+            },
+            {
+              "type": "value",
+              "value": "1",
+              "text": "ERROR"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Exporter Scrape Duration",
+      "gridPos": {
+        "x": 6,
+        "y": 44,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "pg_exporter_last_scrape_duration_seconds{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        }
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Database Rollback Ratio",
+      "gridPos": {
+        "x": 12,
+        "y": 44,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "100 * sum by (instance) (rate(pg_stat_database_xact_rollback{instance=~\"$instance\",datname=~\"$database\"}[5m])) / clamp_min(sum by (instance) (rate(pg_stat_database_xact_commit{instance=~\"$instance\",datname=~\"$database\"}[5m])) + sum by (instance) (rate(pg_stat_database_xact_rollback{instance=~\"$instance\",datname=~\"$database\"}[5m])), 1)",
+          "legendFormat": "{{instance}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0
+        }
+      }
+    },
+    {
+      "type": "stat",
+      "title": "Max Connections",
+      "gridPos": {
+        "x": 18,
+        "y": 44,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "expr": "pg_settings_max_connections{instance=~\"$instance\"}",
+          "legendFormat": "{{instance}}"
+        }
+      ]
+    }
+  ]
+}

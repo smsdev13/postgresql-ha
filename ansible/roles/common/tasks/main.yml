@@ -1,0 +1,32 @@
+---
+- name: Set timezone
+  community.general.timezone:
+    name: "{{ timezone }}"
+
+- name: Install common packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - vim
+      - wget
+      - net-tools
+      - chrony
+      - ca-certificates
+      - gnupg
+      - jq
+    state: present
+    update_cache: true
+
+- name: Ensure chrony is enabled and started
+  ansible.builtin.service:
+    name: chrony
+    enabled: true
+    state: started
+
+- name: Configure /etc/hosts
+  ansible.builtin.template:
+    src: hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: "0644"

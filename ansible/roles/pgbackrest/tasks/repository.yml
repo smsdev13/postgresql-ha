@@ -1,0 +1,63 @@
+---
+- name: Install prerequisites for PGDG repository
+  ansible.builtin.apt:
+    name:
+      - ca-certificates
+      - curl
+      - gnupg
+    state: present
+    update_cache: true
+
+- name: Add PostgreSQL repository key
+  ansible.builtin.apt_key:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    state: present
+
+- name: Add PostgreSQL APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main"
+    state: present
+    filename: pgdg
+
+- name: Install pgBackRest on repository host
+  ansible.builtin.apt:
+    name: "pgbackrest=2.59.1-1.pgdg22.04+1"
+    state: present
+    update_cache: true
+
+- name: Create pgBackRest group
+  ansible.builtin.group:
+    name: "{{ pgbackrest_repo_group }}"
+    state: present
+
+- name: Create pgBackRest user
+  ansible.builtin.user:
+    name: "{{ pgbackrest_repo_user }}"
+    group: "{{ pgbackrest_repo_group }}"
+    system: true
+    shell: /bin/bash
+    create_home: true
+    state: present
+
+- name: Set pgBackRest config ownership
+  ansible.builtin.file:
+    path: /etc/pgbackrest.conf
+    owner: root
+    group: "{{ pgbackrest_repo_group }}"
+    mode: "0640"
+
+- name: Create pgBackRest repository directory
+  ansible.builtin.file:
+    path: "{{ pgbackrest_repo_path }}"
+    state: directory
+    owner: "{{ pgbackrest_repo_user }}"
+    group: "{{ pgbackrest_repo_group }}"
+    mode: "0750"
+
+- name: Create pgBackRest spool directory
+  ansible.builtin.file:
+    path: "{{ pgbackrest_spool_path }}"
+    state: directory
+    owner: "{{ pgbackrest_repo_user }}"
+    group: "{{ pgbackrest_repo_group }}"
+    mode: "0750"

@@ -1,0 +1,66 @@
+---
+- name: Install PostgreSQL repository prerequisites
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+    update_cache: true
+
+- name: Create keyring directory
+  ansible.builtin.file:
+    path: /usr/share/postgresql-common/pgdg
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Download PostgreSQL repository signing key
+  ansible.builtin.get_url:
+    url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    dest: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Configure PostgreSQL apt repository
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/pgdg.sources
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      Types: deb
+      URIs: https://apt.postgresql.org/pub/repos/apt
+      Suites: jammy-pgdg
+      Architectures: amd64
+      Components: main
+      Signed-By: /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc
+
+- name: Install PostgreSQL
+  ansible.builtin.apt:
+    name:
+      - "postgresql-{{ postgresql_version }}"
+      - "postgresql-client-{{ postgresql_version }}"
+    state: present
+    update_cache: true
+
+- name: Check whether default PostgreSQL cluster exists
+  ansible.builtin.shell:
+    cmd: "pg_lsclusters --no-header | awk '$1 == \"{{ postgresql_version }}\" && $2 == \"main\" {print $1 \":\" $2}'"
+  register: default_cluster
+  changed_when: false
+
+- name: Remove default PostgreSQL cluster
+  ansible.builtin.command:
+    cmd: "pg_dropcluster --stop {{ postgresql_version }} main"
+  when: default_cluster.stdout | trim == postgresql_version ~ ":main"
+
+
+- name: Disable PostgreSQL service
+  ansible.builtin.systemd:
+    name: "{{ postgresql_service_name }}"
+    enabled: false
+    state: stopped

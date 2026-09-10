@@ -1,0 +1,10 @@
+---
+- name: Configure backup repository
+  ansible.builtin.include_tasks:
+    file: repository.yml
+  when: inventory_hostname in groups['backup']
+
+- name: Configure PostgreSQL backup client
+  ansible.builtin.include_tasks:
+    file: postgres.yml
+  when: inventory_hostname in groups['postgres']

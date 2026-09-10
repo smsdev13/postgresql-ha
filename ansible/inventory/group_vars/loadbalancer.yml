@@ -1,0 +1,20 @@
+---
+haproxy_version: ""
+
+haproxy_frontend_port: 5432
+haproxy_stats_port: 8404
+
+keepalived_interface: eth1
+keepalived_router_id: 51
+
+keepalived_priority:
+  lb1: 200
+  lb2: 100
+
+keepalived_auth_pass: "ChangeThisPassword"
+
+postgres_vip: 10.10.10.100
+postgres_vip_cidr: 24
+
+postgres_backend_port: 5432
+patroni_api_port: 8008

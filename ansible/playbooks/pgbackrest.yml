@@ -1,0 +1,12 @@
+---
+- name: Configure pgBackRest repository
+  hosts: backup
+  become: true
+  roles:
+    - pgbackrest
+
+- name: Configure pgBackRest clients
+  hosts: postgres
+  become: true
+  roles:
+    - pgbackrest

@@ -1,0 +1,17 @@
+---
+pgbackrest_package: pgbackrest
+
+pgbackrest_repo_user: pgbackrest
+pgbackrest_repo_group: pgbackrest
+
+pgbackrest_repo_path: /var/lib/pgbackrest
+pgbackrest_spool_path: /var/spool/pgbackrest
+
+pgbackrest_stanza: postgres-ha
+pgbackrest_repo_retention_full: 2
+
+pgbackrest_compress_type: zst
+
+pgbackrest_ssh_key_path: /var/lib/postgresql/.ssh/id_ed25519
+
+pgbackrest_pg1_path: /var/lib/postgresql/17/main
